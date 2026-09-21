@@ -1,0 +1,30 @@
+name: CELESTE macOS Universal
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['vst3/**', '.github/workflows/celeste-macos.yml']
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Universal VST3 and AU and test DSP
+        run: bash vst3/build-macos.command
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Test real VST3 on the runner architecture
+        run: |
+          python -m pip install numpy==2.2.6 pedalboard==0.9.25
+          python vst3/host_test.py 'vst3/mac-release/CELESTE Parallel.vst3' | tee vst3/mac-release/host-tests.txt
+      - name: Package tested files
+        run: ditto -c -k --sequesterRsrc --keepParent vst3/mac-release CELESTE-Parallel-macOS-Universal.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CELESTE-Parallel-macOS-Universal
+          path: CELESTE-Parallel-macOS-Universal.zip
+          if-no-files-found: error
