@@ -12,7 +12,7 @@ Necesitas las herramientas de desarrollo de Apple y CMake 3.22 o superior. En Te
 bash build-macos.command
 ```
 
-El script descarga JUCE 7.0.12, compila VST3, AU y la aplicación, ejecuta las pruebas DSP y comprueba que los tres binarios contienen arm64 y x86_64. Deja los resultados en `mac-release` y crea `CELESTE-Parallel-macOS-Universal.zip`. Los fallos detienen el proceso; no se anuncia éxito si las pruebas fallan.
+El script descarga JUCE 8.0.12, compila VST3, AU y la aplicación, ejecuta las pruebas DSP y comprueba que los tres binarios contienen arm64 y x86_64. Deja los resultados en `mac-release` y crea `CELESTE-Parallel-macOS-Universal.zip`. Los fallos detienen el proceso; no se anuncia éxito si las pruebas fallan.
 
 Para comprobar el VST3 mediante un host real, instala NumPy y Pedalboard en un entorno Python local y ejecuta:
 

@@ -22,6 +22,11 @@ jobs:
           python -m pip install numpy==2.2.6 pedalboard==0.9.25
           python vst3/host_test.py 'vst3/mac-release/CELESTE Parallel.vst3' | tee vst3/mac-release/host-tests.txt
       - name: Package tested files
+        run: |
+          mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"
+          ditto 'vst3/mac-release/CELESTE Parallel.component' "$HOME/Library/Audio/Plug-Ins/Components/CELESTE Parallel.component"
+          auval -v aufx Cpf1 Clst | tee vst3/mac-release/au-validation.txt
+      - name: Archive binaries and validation logs
         run: ditto -c -k --sequesterRsrc --keepParent vst3/mac-release CELESTE-Parallel-macOS-Universal.zip
       - uses: actions/upload-artifact@v4
         with:

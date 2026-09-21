@@ -15,10 +15,10 @@ build="$PWD/.mac-build"
 out="$PWD/mac-release"
 mkdir -p "$deps" "$out"
 if [ ! -d "$deps/JUCE/.git" ]; then
-  git clone --depth 1 --branch 7.0.12 https://github.com/juce-framework/JUCE.git "$deps/JUCE"
+  git clone --depth 1 --branch 8.0.12 https://github.com/juce-framework/JUCE.git "$deps/JUCE"
 fi
-if [ "$(git -C "$deps/JUCE" describe --tags --exact-match)" != 7.0.12 ]; then
-  echo "Expected JUCE 7.0.12 in $deps/JUCE" >&2; exit 1
+if [ "$(git -C "$deps/JUCE" describe --tags --exact-match)" != 8.0.12 ]; then
+  echo "Expected JUCE 8.0.12 in $deps/JUCE" >&2; exit 1
 fi
 cmake -S . -B "$build" -G "Unix Makefiles" \
   -DCMAKE_BUILD_TYPE=Release \
@@ -37,7 +37,7 @@ for bundle in "$out/CELESTE Parallel.vst3" "$out/CELESTE Parallel.component" "$o
 done
 cp README-MAC.md "$out/LEEME-MAC.md"
 mkdir -p "$out/licenses"
-cp "$deps/JUCE/LICENSE.md" "$out/licenses/JUCE-7-LICENSE.md"
+cp "$deps/JUCE/LICENSE.md" "$out/licenses/JUCE-8-LICENSE.md"
 cp "$deps/JUCE/modules/juce_audio_processors/format_types/VST3_SDK/LICENSE.txt" "$out/licenses/VST3-LICENSE.txt"
 ditto -c -k --sequesterRsrc --keepParent "$out" "$PWD/CELESTE-Parallel-macOS-Universal.zip"
 echo "Built Universal VST3 + AU + standalone. Output: $out"
