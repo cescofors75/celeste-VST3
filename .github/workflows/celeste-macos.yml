@@ -12,6 +12,12 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            vst3/.mac-deps
+            vst3/.mac-build
+          key: macos15-juce8012-${{ hashFiles('vst3/*.cpp', 'vst3/*.h', 'vst3/CMakeLists.txt') }}
       - name: Build Universal VST3 and AU and test DSP
         run: bash vst3/build-macos.command
       - uses: actions/setup-python@v5
@@ -21,7 +27,7 @@ jobs:
         run: |
           python -m pip install numpy==2.2.6 pedalboard==0.9.25
           python vst3/host_test.py 'vst3/mac-release/CELESTE Parallel.vst3' | tee vst3/mac-release/host-tests.txt
-      - name: Package tested files
+      - name: Validate Audio Unit
         run: |
           mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"
           ditto 'vst3/mac-release/CELESTE Parallel.component' "$HOME/Library/Audio/Plug-Ins/Components/CELESTE Parallel.component"
@@ -33,3 +39,23 @@ jobs:
           name: CELESTE-Parallel-macOS-Universal
           path: CELESTE-Parallel-macOS-Universal.zip
           if-no-files-found: error
+  test-intel:
+    needs: build
+    runs-on: macos-15-intel
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: CELESTE-Parallel-macOS-Universal
+      - run: ditto -x -k CELESTE-Parallel-macOS-Universal.zip .
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Test VST3 and AU on Intel
+        run: |
+          python -m pip install numpy==2.2.6 pedalboard==0.9.25
+          python vst3/host_test.py 'mac-release/CELESTE Parallel.vst3'
+          mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"
+          ditto 'mac-release/CELESTE Parallel.component' "$HOME/Library/Audio/Plug-Ins/Components/CELESTE Parallel.component"
+          auval -v aufx Cpf1 Clst

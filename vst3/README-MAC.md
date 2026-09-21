@@ -1,8 +1,8 @@
 # CELESTE Parallel — macOS
 
-Preparación para VST3 y Audio Unit (AU), con la misma interfaz y motor de Windows. Universal: Apple Silicon + Intel; objetivo mínimo macOS 11. El AU permite usarlo en Logic Pro. El plugin necesita una pista estéreo con audio.
+VST3 y Audio Unit (AU), con la misma interfaz y motor de Windows. Universal: Apple Silicon + Intel; objetivo mínimo macOS 11. El AU permite usarlo en Logic Pro. El plugin necesita una pista estéreo con audio.
 
-**Estado:** código y procedimiento preparados desde Windows. No hay todavía un binario macOS compilado ni pruebas ejecutadas en Mac. El ZIP denominado `macOS-source` contiene fuentes, no un plugin instalable.
+**Descarga:** usa el artefacto `CELESTE-Parallel-macOS-Universal` de una ejecución verde de GitHub Actions. Contiene los plugins compilados y los logs de validación. El ZIP denominado `macOS-source` contiene únicamente fuentes.
 
 ## Compilar en tu Mac
 
@@ -32,6 +32,6 @@ Copia las carpetas completas, conservando `Contents`:
 
 Vuelve a abrir el DAW, reescanea los plugins y selecciona CELESTE Parallel. En Logic puedes comprobar el AU instalado con `auval -v aufx Cpf1 Clst` desde Terminal. Prueba inicialmente Parallel Dreams o Celestial Bloom.
 
-Esta preparación no incluye certificado Apple Developer ID ni notarización para distribución pública. No cambia Gatekeeper ni borra atributos de seguridad. La validación en el DAW y en ambas arquitecturas sigue pendiente hasta disponer de un Mac; comprobar las arquitecturas con `lipo` no sustituye ejecutarlas.
+Este prototipo no incluye certificado Apple Developer ID ni notarización para distribución pública. No cambia Gatekeeper ni borra atributos de seguridad. Los logs del paquete indican las pruebas ejecutadas en el Mac de compilación; la prueba manual en tu DAW sigue siendo necesaria. Comprobar ambas arquitecturas con `lipo` no sustituye ejecutarlas en ambas.
 
 Las funciones, controles y límites del prototipo se describen en `README.md`. Las pruebas Windows de `VALIDATION.md` no certifican macOS.

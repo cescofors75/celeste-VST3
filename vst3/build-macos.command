@@ -33,12 +33,12 @@ ditto "$artifacts/VST3/CELESTE Parallel.vst3" "$out/CELESTE Parallel.vst3"
 ditto "$artifacts/AU/CELESTE Parallel.component" "$out/CELESTE Parallel.component"
 ditto "$artifacts/Standalone/CELESTE Parallel.app" "$out/CELESTE Parallel.app"
 for bundle in "$out/CELESTE Parallel.vst3" "$out/CELESTE Parallel.component" "$out/CELESTE Parallel.app"; do
-  lipo -verify_arch arm64 x86_64 "$bundle/Contents/MacOS/CELESTE Parallel"
+  lipo "$bundle/Contents/MacOS/CELESTE Parallel" -verify_arch arm64 x86_64
 done
 cp README-MAC.md "$out/LEEME-MAC.md"
 mkdir -p "$out/licenses"
 cp "$deps/JUCE/LICENSE.md" "$out/licenses/JUCE-8-LICENSE.md"
-cp "$deps/JUCE/modules/juce_audio_processors/format_types/VST3_SDK/LICENSE.txt" "$out/licenses/VST3-LICENSE.txt"
+cp "$deps/JUCE/modules/juce_audio_processors_headless/format_types/VST3_SDK/LICENSE.txt" "$out/licenses/VST3-LICENSE.txt"
 ditto -c -k --sequesterRsrc --keepParent "$out" "$PWD/CELESTE-Parallel-macOS-Universal.zip"
 echo "Built Universal VST3 + AU + standalone. Output: $out"
 echo "Local development build: not Developer ID signed or notarized. No security settings were changed."
