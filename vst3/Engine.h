@@ -24,7 +24,10 @@ public:
   for(auto& s:smooth)s.reset(sr,.04);topology.reset(sr,.04);topology.setCurrentAndTargetValue(0);
   verb.setSampleRate(sr);verb.reset();folded.setSize(2,512);spaceBuffer.setSize(2,512);oversample.reset();oversample.initProcessing(512);set(Settings{},true);
  }
- void set(const Settings& p,bool immediate=false){const float v[]={p.a,p.b,p.feedback,p.cutoff,p.fold,p.space,p.motion,p.bypass?0.f:p.mix,p.rate,p.bypass?1.f:juce::Decibels::decibelsToGain(p.output)};
+ void set(const Settings& p,bool immediate=false){
+  // Parameter snapping can leave a tiny residual at 0 dB on FMA architectures.
+  const float outputGain=std::abs(p.output)<.0001f?1.f:juce::Decibels::decibelsToGain(p.output);
+  const float v[]={p.a,p.b,p.feedback,p.cutoff,p.fold,p.space,p.motion,p.bypass?0.f:p.mix,p.rate,p.bypass?1.f:outputGain};
   for(size_t i=0;i<smooth.size();i++)if(immediate)smooth[i].setCurrentAndTargetValue(v[i]);else smooth[i].setTargetValue(v[i]);
   if(immediate)topology.setCurrentAndTargetValue(p.series?1.f:0.f);else topology.setTargetValue(p.series?1.f:0.f);
  }

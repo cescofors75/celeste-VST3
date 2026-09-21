@@ -25,6 +25,7 @@ for sr in (44100, 48000, 96000):
                        .2*np.sin(2*np.pi*330*t)+.07*np.sin(2*np.pi*3200*t)))
     put(master_mix=0., output=0., bypass=False)
     dry = plugin(signal, sr, buffer_size=257)
+    print('Dry max error:',float(np.max(np.abs(signal-dry))), 'Output dB:',float(plugin.output), flush=True)
     assert np.array_equal(signal, dry), 'Dry signal is not sample-exact'
     put(master_mix=.7, feedback=.6, space=.5, wavefolder=.3, motion=.4)
     wet = plugin(signal, sr, buffer_size=257)

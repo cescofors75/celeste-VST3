@@ -6,6 +6,9 @@ on:
     paths: ['vst3/**', '.github/workflows/celeste-macos.yml']
 permissions:
   contents: read
+defaults:
+  run:
+    shell: bash
 jobs:
   build:
     runs-on: macos-15
@@ -18,6 +21,7 @@ jobs:
             vst3/.mac-deps
             vst3/.mac-build
           key: macos15-juce8012-${{ hashFiles('vst3/*.cpp', 'vst3/*.h', 'vst3/CMakeLists.txt') }}
+          restore-keys: macos15-juce8012-
       - name: Build Universal VST3 and AU and test DSP
         run: bash vst3/build-macos.command
       - uses: actions/setup-python@v5
@@ -31,6 +35,8 @@ jobs:
         run: |
           mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"
           ditto 'vst3/mac-release/CELESTE Parallel.component' "$HOME/Library/Audio/Plug-Ins/Components/CELESTE Parallel.component"
+          killall -u "$USER" AudioComponentRegistrar || true
+          sleep 3
           auval -v aufx Cpf1 Clst | tee vst3/mac-release/au-validation.txt
       - name: Archive binaries and validation logs
         run: ditto -c -k --sequesterRsrc --keepParent vst3/mac-release CELESTE-Parallel-macOS-Universal.zip
@@ -58,4 +64,6 @@ jobs:
           python vst3/host_test.py 'mac-release/CELESTE Parallel.vst3'
           mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"
           ditto 'mac-release/CELESTE Parallel.component' "$HOME/Library/Audio/Plug-Ins/Components/CELESTE Parallel.component"
+          killall -u "$USER" AudioComponentRegistrar || true
+          sleep 3
           auval -v aufx Cpf1 Clst
