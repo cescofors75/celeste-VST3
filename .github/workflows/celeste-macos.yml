@@ -71,7 +71,10 @@ jobs:
           python -m pip install numpy==2.2.6 pedalboard==0.9.25
           python vst3/host_test.py 'mac-release/CELESTE Parallel.vst3'
           mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"
-          ditto 'mac-release/CELESTE Parallel.component' "$HOME/Library/Audio/Plug-Ins/Components/CELESTE Parallel.component"
+          sudo mkdir -p /Library/Audio/Plug-Ins/Components
+          sudo ditto 'mac-release/CELESTE Parallel.component' '/Library/Audio/Plug-Ins/Components/CELESTE Parallel.component'
+          codesign --verify --strict --verbose=2 '/Library/Audio/Plug-Ins/Components/CELESTE Parallel.component'
+          sudo killall AudioComponentRegistrar || true
           killall -u "$USER" AudioComponentRegistrar || true
           for attempt in {1..10}; do
             auval -a > /tmp/celeste-au-list.txt
