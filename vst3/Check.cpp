@@ -14,6 +14,12 @@ int main(int argc,char** argv){
    for(int c=0;c<2;c++)for(int i=0;i<n;i++)if(block.getSample(c,i)!=0){std::cerr<<"Reset silence failed "<<sr<<" block "<<n<<" sample "<<i<<" value "<<block.getSample(c,i)<<"\n";return 14;}
   }
   std::cout<<"PASS reset after wet audio and variable blocks at "<<sr<<" Hz\n";
+  p.a=110.00001f;p.b=270.00003f;reused.prepare(sr);reused.set(p,true);
+  block.setSize(2,64);
+  for(int k=0;k<int(sr*3/64)+1;k++){block.clear();reused.process(block,p);
+   for(int c=0;c<2;c++)for(int i=0;i<64;i++)if(block.getSample(c,i)!=0){std::cerr<<"Delay wrap silence failed "<<sr<<" at "<<k*64+i<<"\n";return 15;}
+  }
+  std::cout<<"PASS fractional delay wraparound stays silent at "<<sr<<" Hz\n";
  }
  for(double sr:{44100.,48000.,96000.}){
   Engine e;e.prepare(sr);Settings s;s.mix=0;s.space=0;e.set(s,true);juce::AudioBuffer<float>b(2,1024);

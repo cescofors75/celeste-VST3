@@ -34,6 +34,7 @@ jobs:
             python vst3/host_test.py 'vst3/mac-release/CELESTE Parallel.vst3'
           done | tee vst3/mac-release/host-tests.txt
       - name: Validate Audio Unit
+        if: ${{ !cancelled() }}
         run: |
           mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"
           ditto 'vst3/mac-release/CELESTE Parallel.component' "$HOME/Library/Audio/Plug-Ins/Components/CELESTE Parallel.component"

@@ -10,7 +10,13 @@ struct Settings {
 class Engine {
  struct Delay {std::vector<float> mem;int pos=0;float tone=0;
   void prepare(int n){mem.assign(n,0);pos=0;tone=0;}
-  float read(float samples){float at=float(pos)-samples;while(at<0)at+=float(mem.size());int i=int(at);float f=at-float(i);return mem[size_t(i)]*(1-f)+mem[size_t((i+1)%int(mem.size()))]*f;}
+  float read(float samples){
+   // Float wraparound can round a tiny negative offset to mem.size(), reading
+   // past the delay buffer. Keep the address calculation in double precision.
+   double at=double(pos)-double(samples);while(at<0)at+=double(mem.size());
+   const auto i=size_t(at)%mem.size();const float f=float(at-std::floor(at));
+   return mem[i]*(1-f)+mem[(i+1)%mem.size()]*f;
+  }
   void put(float x){mem[size_t(pos)]=x;pos=(pos+1)%int(mem.size());}
  } da[2],db[2];
  double sr=48000,phase=0;float lp[2]{},dcX[2]{},dcY[2]{};
