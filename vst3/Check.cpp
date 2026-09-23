@@ -4,6 +4,17 @@
 double difference(const juce::AudioBuffer<float>& a,const juce::AudioBuffer<float>& b){double sum=0;for(int c=0;c<2;c++)for(int i=0;i<a.getNumSamples();i++)sum+=std::abs(a.getSample(c,i)-b.getSample(c,i));return sum;}
 juce::AudioBuffer<float> impulse(double sr,Settings s){Engine e;e.prepare(sr);e.set(s,true);juce::AudioBuffer<float> b(2,int(sr));b.clear();b.setSample(0,0,.7f);b.setSample(1,0,.5f);e.process(b,s);return b;}
 int main(int argc,char** argv){
+ Engine reused;
+ for(double sr:{44100.,48000.,96000.}){
+  reused.prepare(sr);Settings p;p.mix=1;p.space=1;p.fold=1;p.motion=1;p.feedback=.85f;reused.set(p,true);
+  juce::AudioBuffer<float> block(2,257);for(int c=0;c<2;c++)for(int i=0;i<257;i++)block.setSample(c,i,.3f*std::sin(float(i)*.07f));
+  for(int k=0;k<200;k++)reused.process(block,p);
+  reused.reset();reused.set(p,true);
+  for(int n:{64,257,512,1024,17}){block.setSize(2,n);block.clear();reused.process(block,p);
+   for(int c=0;c<2;c++)for(int i=0;i<n;i++)if(block.getSample(c,i)!=0){std::cerr<<"Reset silence failed "<<sr<<" block "<<n<<" sample "<<i<<" value "<<block.getSample(c,i)<<"\n";return 14;}
+  }
+  std::cout<<"PASS reset after wet audio and variable blocks at "<<sr<<" Hz\n";
+ }
  for(double sr:{44100.,48000.,96000.}){
   Engine e;e.prepare(sr);Settings s;s.mix=0;s.space=0;e.set(s,true);juce::AudioBuffer<float>b(2,1024);
   for(int c=0;c<2;c++)for(int i=0;i<1024;i++)b.setSample(c,i,.3f*std::sin(float(i)*.07f));auto original=b;e.process(b,s);
