@@ -32,6 +32,7 @@ Copia las carpetas completas, conservando `Contents`:
 
 Vuelve a abrir el DAW, reescanea los plugins y selecciona CELESTE Parallel. En Logic puedes comprobar el AU instalado con `auval -v aufx Cpf1 Clst` desde Terminal. Prueba inicialmente Parallel Dreams o Celestial Bloom.
 
-Este prototipo no incluye certificado Apple Developer ID ni notarización para distribución pública. No cambia Gatekeeper ni borra atributos de seguridad. Los logs del paquete indican las pruebas ejecutadas en el Mac de compilación; la prueba manual en tu DAW sigue siendo necesaria. Comprobar ambas arquitecturas con `lipo` no sustituye ejecutarlas en ambas.
+Los bundles llevan firma ad hoc para desarrollo y se verifica su integridad durante la compilación. Este prototipo no incluye certificado Apple Developer ID ni notarización para distribución pública. No cambia Gatekeeper ni borra atributos de seguridad. Los logs del paquete indican las pruebas ejecutadas en el Mac de compilación; la prueba manual en tu DAW sigue siendo necesaria. Comprobar ambas arquitecturas con `lipo` no sustituye ejecutarlas en ambas.
 
 Las funciones, controles y límites del prototipo se describen en `README.md`. Las pruebas Windows de `VALIDATION.md` no certifican macOS.
+
