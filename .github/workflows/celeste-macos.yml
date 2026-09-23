@@ -39,8 +39,12 @@ jobs:
           mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"
           ditto 'vst3/mac-release/CELESTE Parallel.component' "$HOME/Library/Audio/Plug-Ins/Components/CELESTE Parallel.component"
           killall -u "$USER" AudioComponentRegistrar || true
-          sleep 3
-          auval -a
+          for attempt in {1..10}; do
+            auval -a > /tmp/celeste-au-list.txt
+            if grep -q 'aufx.*Cpf1.*Clst' /tmp/celeste-au-list.txt; then break; fi
+            sleep 2
+          done
+          cat /tmp/celeste-au-list.txt
           auval -v aufx Cpf1 Clst | tee vst3/mac-release/au-validation.txt
       - name: Archive binaries and validation logs
         run: ditto -c -k --sequesterRsrc --keepParent vst3/mac-release CELESTE-Parallel-macOS-Universal.zip
@@ -69,5 +73,11 @@ jobs:
           mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"
           ditto 'mac-release/CELESTE Parallel.component' "$HOME/Library/Audio/Plug-Ins/Components/CELESTE Parallel.component"
           killall -u "$USER" AudioComponentRegistrar || true
-          sleep 3
+          for attempt in {1..10}; do
+            auval -a > /tmp/celeste-au-list.txt
+            if grep -q 'aufx.*Cpf1.*Clst' /tmp/celeste-au-list.txt; then break; fi
+            sleep 2
+          done
+          cat /tmp/celeste-au-list.txt
           auval -v aufx Cpf1 Clst
+
