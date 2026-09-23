@@ -20,6 +20,15 @@ class Engine {
  juce::SmoothedValue<float> topology;
 public:
  std::array<std::atomic<float>,7> meters{};
+ void reset(){
+  phase=0;
+  for(int ch=0;ch<2;ch++){
+   for(auto* d:{&da[ch],&db[ch]}){std::fill(d->mem.begin(),d->mem.end(),0.f);d->pos=0;d->tone=0;}
+   lp[ch]=dcX[ch]=dcY[ch]=0;
+  }
+  verb.reset();oversample.reset();folded.clear();spaceBuffer.clear();
+  for(auto& m:meters)m.store(0);
+ }
  void prepare(double rate){sr=rate;phase=0;for(int ch=0;ch<2;ch++){da[ch].prepare(int(sr*2)+8);db[ch].prepare(int(sr*2)+8);lp[ch]=dcX[ch]=dcY[ch]=0;}
   for(auto& s:smooth)s.reset(sr,.04);topology.reset(sr,.04);topology.setCurrentAndTargetValue(0);
   verb.setSampleRate(sr);verb.reset();folded.setSize(2,512);spaceBuffer.setSize(2,512);oversample.reset();oversample.initProcessing(512);set(Settings{},true);

@@ -21,6 +21,7 @@ public:
  const String getName()const override{return "CELESTE Parallel";}
  void prepareToPlay(double sr,int)override{engine.prepare(sr);engine.set(settings(),true);}
  void releaseResources()override{}
+ void reset()override{engine.reset();engine.set(settings(),true);}
  bool isBusesLayoutSupported(const BusesLayout& b)const override{return b.getMainInputChannelSet()==AudioChannelSet::stereo()&&b.getMainOutputChannelSet()==AudioChannelSet::stereo();}
  void processBlock(AudioBuffer<float>& b,MidiBuffer&)override{engine.process(b,settings());}
  bool acceptsMidi()const override{return false;}bool producesMidi()const override{return false;}double getTailLengthSeconds()const override{return 20;}

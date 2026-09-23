@@ -41,6 +41,7 @@ for sr in (44100, 48000, 96000):
     assert np.array_equal(signal, bypass), 'Bypass is not sample-exact'
     put(bypass=False, output=0., master_mix=1., feedback=.85, wavefolder=1., motion=1., space=1.)
     silence=plugin(np.zeros((2,sr),np.float32),sr,buffer_size=64)
+    print('Silence peak after host reset:',float(np.max(np.abs(silence))),flush=True)
     assert np.max(np.abs(silence)) == 0., 'Silent input generates noise'
     # Distinct delay topology with identical parameter values and fresh state.
     put(feedback=.4, space=0., motion=0., wavefolder=0., delay_a=110., delay_b=270., delays_in_series=False)
