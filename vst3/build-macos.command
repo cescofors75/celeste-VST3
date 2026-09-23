@@ -34,6 +34,8 @@ ditto "$artifacts/AU/CELESTE Parallel.component" "$out/CELESTE Parallel.componen
 ditto "$artifacts/Standalone/CELESTE Parallel.app" "$out/CELESTE Parallel.app"
 for bundle in "$out/CELESTE Parallel.vst3" "$out/CELESTE Parallel.component" "$out/CELESTE Parallel.app"; do
   lipo "$bundle/Contents/MacOS/CELESTE Parallel" -verify_arch arm64 x86_64
+  codesign --force --sign - --timestamp=none "$bundle"
+  codesign --verify --strict --verbose=2 "$bundle"
 done
 cp README-MAC.md "$out/LEEME-MAC.md"
 mkdir -p "$out/licenses"
