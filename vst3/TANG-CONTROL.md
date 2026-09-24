@@ -8,7 +8,8 @@ El efecto nativo se conserva. TANG CONTROL añade 44 parámetros de hardware ind
 2. Abrir TANG CONTROL, indicar COM14 en Windows o el dispositivo /dev/cu.usbserial-… en macOS y pulsar CONNECT. No abre puertos automáticamente al cargar proyectos.
 3. Elegir READ TANG para importar valores reales o SEND SESSION para aplicar los valores guardados del plugin. Conectar solo no escribe controles ni modifica el audio. Leer la Tang sustituye los parámetros hardware guardados en la instancia; enviar la sesión escribe los 44 controles.
 4. Activar CONTROLLER ONLY si se desea que el audio del DAW pase intacto por el plugin mientras controla el equipo externo. Desactivado, el motor nativo continúa procesando la pista. Los presets nativos no son presets de la Tang.
-5. Automatizar los parámetros que empiezan por Tang. Automatización de control a 20 Hz, no precisa a nivel de muestra ni sincronizada al transporte/BPM. READ TANG actualiza movimientos de los encoders físicos; no hay seguimiento bidireccional continuo en esta primera versión.
+5. START LINE-IN / STOP inicia o detiene la entrada fisica sin abrir la web; no sigue automaticamente Play/Stop del DAW.
+6. Automatizar los parámetros que empiezan por Tang. Automatización de control a 20 Hz, no precisa a nivel de muestra ni sincronizada al transporte/BPM. READ TANG actualiza movimientos de los encoders físicos; no hay seguimiento bidireccional continuo en esta primera versión.
 
 ## Audio real
 

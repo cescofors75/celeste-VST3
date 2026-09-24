@@ -12,7 +12,7 @@ public:
  tang::Link tangLink;
  std::array<int,tang::count> lastTang{};bool tangReady=false,readRequested=false;
  void timerCallback()override{
-  if(!tangLink.connected){tangReady=false;return;}
+  if(!tangLink.connected){tangReady=false;readRequested=false;return;}
   std::map<int,int> incoming;if(tangLink.take(incoming)&&readRequested){for(int i=0;i<tang::count;i++){auto spec=tang::params[i];int raw=incoming[spec.wire];if(spec.wire==20)raw=raw?1:0;auto* v=state.getParameter(tang::id(i));float value=spec.maximum==65535?raw*100.f/65535.f:float(raw);v->setValueNotifyingHost(v->convertTo0to1(value));lastTang[i]=raw;}tangReady=true;readRequested=false;}
   if(!tangReady)return;for(int i=0;i<tang::count;i++){auto spec=tang::params[i];float v=state.getRawParameterValue(tang::id(i))->load();int raw=spec.maximum==65535?juce::roundToInt(v*65535.f/100.f):juce::roundToInt(v);if(raw!=lastTang[i]){tangLink.set(spec.wire,raw);lastTang[i]=raw;}}
  }
@@ -27,8 +27,8 @@ public:
    l.add(std::make_unique<AudioParameterFloat>(ParameterID(ids[i],1),i<8?labels[i]:i==8?"LFO Rate":"Output",r,defaults[i]));}
   l.add(std::make_unique<AudioParameterBool>(ParameterID("series",1),"Delays in series",false));
   l.add(std::make_unique<AudioParameterBool>(ParameterID("bypass",1),"Bypass",false));
-  l.add(std::make_unique<AudioParameterBool>(ParameterID("controllerOnly",1),"Tang controller only",false));
-  for(int i=0;i<tang::count;i++){auto spec=tang::params[i];l.add(std::make_unique<AudioParameterFloat>(ParameterID(tang::id(i),1),"Tang "+String(spec.name),NormalisableRange<float>(0.f,spec.maximum==65535?100.f:float(spec.maximum),spec.maximum==65535?.001f:1.f),0.f));}
+  l.add(std::make_unique<AudioParameterBool>(ParameterID("controllerOnly",2),"Tang controller only",false));
+  for(int i=0;i<tang::count;i++){auto spec=tang::params[i];l.add(std::make_unique<AudioParameterFloat>(ParameterID(tang::id(i),2),"Tang "+String(spec.name),NormalisableRange<float>(0.f,spec.maximum==65535?100.f:float(spec.maximum),spec.maximum==65535?.001f:1.f),0.f));}
   return l;
  }
  Settings settings()const{Settings s;float* fields[]={&s.a,&s.b,&s.feedback,&s.cutoff,&s.fold,&s.space,&s.motion,&s.mix,&s.rate,&s.output};for(int i=0;i<10;i++)*fields[i]=state.getRawParameterValue(ids[i])->load();s.series=state.getRawParameterValue("series")->load()>.5f;s.bypass=state.getRawParameterValue("bypass")->load()>.5f;return s;}
@@ -84,7 +84,7 @@ public:
  void resized()override{title.setBounds(0,0,160,24);int width=(getWidth()-165)/8;for(size_t i=0;i<buttons.size();i++)buttons[i]->setBounds(165+int(i%8)*width,int(i/8)*30,width,28);}
 };
 class TangPanel:public Component,private Timer {
- Processor& p;TextEditor port;TextButton connect{"CONNECT"},read{"READ TANG"},send{"SEND SESSION"},dry{"CONTROLLER ONLY"};Label status,hint;Viewport view;Component content;
+ Processor& p;TextEditor port;TextButton connect{"CONNECT"},read{"READ TANG"},send{"SEND SESSION"},dry{"CONTROLLER ONLY"},start{"START LINE-IN"},stop{"STOP"};Label status,hint;Viewport view;Component content;
  std::vector<std::unique_ptr<TangSwitches>> switches;
  std::array<Slider,tang::count> controls;std::array<Label,tang::count> names;
  std::array<std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment>,tang::count> links;
@@ -97,18 +97,18 @@ public:
  port.setText("/dev/cu.usbserial-REPLACE");
 #endif
  port.setTooltip("Windows: COM14. macOS: /dev/cu.usbserial-... Close the browser serial connection first.");
- for(Component* c:std::initializer_list<Component*>{&port,&connect,&read,&send,&dry,&status,&hint,&view})addAndMakeVisible(c);
+ for(Component* c:std::initializer_list<Component*>{&port,&connect,&read,&send,&dry,&start,&stop,&status,&hint,&view})addAndMakeVisible(c);
  connect.onClick=[this]{if(p.tangLink.connected)p.tangLink.disconnect();else p.tangLink.connect(port.getText());};read.onClick=[this]{p.readTang();};send.onClick=[this]{p.sendTang();};
- dry.setClickingTogglesState(true);dryLink=std::make_unique<AudioProcessorValueTreeState::ButtonAttachment>(p.state,"controllerOnly",dry);
+ start.onClick=[this]{p.tangLink.lineIn(true);};stop.onClick=[this]{p.tangLink.lineIn(false);};dry.setClickingTogglesState(true);dryLink=std::make_unique<AudioProcessorValueTreeState::ButtonAttachment>(p.state,"controllerOnly",dry);
  hint.setText("USB = control only | Audio: DAW output > PCM1808 > Tang > PCM5102 > audio interface return",dontSendNotification);hint.setColour(Label::textColourId,Colour(0xff91c5d7));
  view.setViewedComponent(&content,false);view.setScrollBarsShown(true,false);
  for(int i=0;i<tang::count;i++){auto& k=controls[i];auto spec=tang::params[i];content.addAndMakeVisible(k);content.addAndMakeVisible(names[i]);names[i].setText(spec.name,dontSendNotification);names[i].setColour(Label::textColourId,Colour(accents[i%8]));k.setSliderStyle(Slider::LinearHorizontal);k.setTextBoxStyle(Slider::TextBoxBelow,false,110,22);links[i]=std::make_unique<AudioProcessorValueTreeState::SliderAttachment>(p.state,tang::id(i),k);k.setTextValueSuffix(spec.maximum==65535?" %":"");}
  for(int i=34;i<tang::count;i++){controls[i].setVisible(false);names[i].setVisible(false);auto sw=std::make_unique<TangSwitches>(p.state,i);content.addAndMakeVisible(*sw);switches.push_back(std::move(sw));}
  startTimerHz(5);
  }
- void timerCallback()override{status.setText(p.tangLink.status()+(p.tangLink.connected&&!p.tangReady?" | Choose READ TANG or SEND SESSION":""),dontSendNotification);connect.setButtonText(p.tangLink.connected?"DISCONNECT":"CONNECT");status.setColour(Label::textColourId,p.tangLink.connected?Colour(0xff00dfa2):Colour(0xffffba70));read.setEnabled(p.tangLink.connected);send.setEnabled(p.tangLink.connected);for(auto& k:controls)k.setEnabled(!p.tangLink.connected||p.tangReady);for(auto& sw:switches){sw->refresh();sw->setEnabled(!p.tangLink.connected||p.tangReady);}}
+ void timerCallback()override{status.setText(p.tangLink.status()+(p.tangLink.connected&&!p.tangReady?" | Choose READ TANG or SEND SESSION":""),dontSendNotification);connect.setButtonText(p.tangLink.connected?"DISCONNECT":"CONNECT");status.setColour(Label::textColourId,p.tangLink.connected?Colour(0xff00dfa2):Colour(0xffffba70));start.setEnabled(p.tangLink.connected);stop.setEnabled(p.tangLink.connected);read.setEnabled(p.tangLink.connected);send.setEnabled(p.tangLink.connected);for(auto& k:controls)k.setEnabled(!p.tangLink.connected||p.tangReady);for(auto& sw:switches){sw->refresh();sw->setEnabled(!p.tangLink.connected||p.tangReady);}}
  void paint(Graphics& g)override{g.fillAll(Colour(0xff071018));}
- void resized()override{port.setBounds(0,0,230,30);connect.setBounds(240,0,125,30);read.setBounds(375,0,125,30);send.setBounds(510,0,145,30);dry.setBounds(665,0,190,30);status.setBounds(0,34,getWidth(),25);hint.setBounds(0,61,getWidth(),25);view.setBounds(0,96,getWidth(),getHeight()-96);int w=(getWidth()-20)/4;for(int i=0;i<34;i++){int x=(i%4)*w,y=(i/4)*90;names[i].setBounds(x+6,y,w-12,23);controls[i].setBounds(x+6,y+23,w-16,62);}int y=9*90+12;for(auto& sw:switches){sw->setBounds(6,y,getWidth()-32,sw->preferredHeight());y+=sw->preferredHeight();}content.setSize(getWidth()-20,y);}
+ void resized()override{port.setBounds(0,0,230,30);connect.setBounds(240,0,125,30);read.setBounds(375,0,125,30);send.setBounds(510,0,145,30);dry.setBounds(665,0,190,30);start.setBounds(865,0,160,30);stop.setBounds(1035,0,90,30);status.setBounds(0,34,getWidth(),25);hint.setBounds(0,61,getWidth(),25);view.setBounds(0,96,getWidth(),getHeight()-96);int w=(getWidth()-20)/4;for(int i=0;i<34;i++){int x=(i%4)*w,y=(i/4)*90;names[i].setBounds(x+6,y,w-12,23);controls[i].setBounds(x+6,y+23,w-16,62);}int y=9*90+12;for(auto& sw:switches){sw->setBounds(6,y,getWidth()-32,sw->preferredHeight());y+=sw->preferredHeight();}content.setSize(getWidth()-20,y);}
 };
 class Editor:public AudioProcessorEditor,private Timer {
  Processor& p;NeonLook look;TooltipWindow tips{this,650};
