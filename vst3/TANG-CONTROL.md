@@ -18,7 +18,7 @@ Salida de audio del ordenador/interfaz → PCM1808 Line-In → FPGA → PCM5102.
 
 Porcentajes normalizados iguales al protocolo web/HDMI, no los rangos del efecto nativo. Incluye Glitch, Filter, ambos delays, Wavefolder, VCA, LFO, Chaos, Chorus, Flanger, Crusher, Freeze, Tremolo, Auto-pan, Envelope, mezclas, Master, bypass, mute, solo y rutas. Freeze Hold por encima del umbral del firmware congela; no es una duración. El nivel audible depende de ruta habilitada y mezcla no nula.
 
-Las últimas filas son configuración avanzada por máscara (sumar los bits deseados):
+Las ultimas filas de la interfaz presentan interruptores por componente y un selector Off/Parallel/Series para Delay 2. El DAW guarda estos grupos como mascaras enteras automatizables. Referencia de los bits:
 
 - Routes: Dry=1, Glitch=2, Delay=4, Filter=8, Wavefolder=16, VCA=32.
 - Delay 2 routing: 0 apagado, 1 paralelo, 3 serie desde Delay; 2 no habilita salida.

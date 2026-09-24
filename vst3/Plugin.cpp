@@ -63,8 +63,29 @@ public:
   float angle=start+pos*(end-start);g.setColour(Colour(0xffe3f9ff));g.drawLine(cx+std::sin(angle)*(radius*.37f),cy-std::cos(angle)*(radius*.37f),cx+std::sin(angle)*(radius*.7f),cy-std::cos(angle)*(radius*.7f),2);
  }
 };
+class TangSwitches:public Component {
+ AudioProcessorValueTreeState& state;String parameter;Label title;std::vector<std::unique_ptr<ToggleButton>> buttons;bool choice;
+public:
+ TangSwitches(AudioProcessorValueTreeState& st,int index):state(st),parameter(tang::id(index)),choice(tang::params[index].wire==27){
+  title.setText(tang::params[index].name,dontSendNotification);title.setColour(Label::textColourId,Colour(0xff8beaff));addAndMakeVisible(title);
+  StringArray labels;switch(tang::params[index].wire){
+   case 20:labels={"Bypass all FX"};break;
+   case 32:labels={"Dry","Glitch","Delay","Filter","Wavefolder","VCA"};break;
+   case 27:labels={"Off","Parallel","Series A > B"};break;
+   case 64:case 65:labels={"Chorus","Flanger","Crusher","Freeze","Tremolo","Auto-pan","Envelope"};break;
+   case 18:case 19:labels={"Filter","VCA"};break;
+   case 22:labels={"Glitch","Delay","Filter","Wavefolder","VCA","Delay 2","LFO","Chaos"};break;
+   default:labels={"Glitch","Delay","Filter","Wavefolder","VCA","Delay 2","Chorus","Flanger","Crusher","Freeze","Tremolo","Auto-pan","Dry"};break;
+  }
+  for(int i=0;i<labels.size();i++){auto b=std::make_unique<ToggleButton>(labels[i]);b->onClick=[this,i]{auto* p=state.getParameter(parameter);int raw=roundToInt(state.getRawParameterValue(parameter)->load());int v=choice?(i==2?3:i):(raw^(1<<i));p->beginChangeGesture();p->setValueNotifyingHost(p->convertTo0to1(float(v)));p->endChangeGesture();refresh();};addAndMakeVisible(*b);buttons.push_back(std::move(b));}refresh();
+ }
+ void refresh(){int v=roundToInt(state.getRawParameterValue(parameter)->load());for(size_t i=0;i<buttons.size();i++)buttons[i]->setToggleState(choice?v==(i==2?3:int(i)):(v&(1<<i))!=0,dontSendNotification);}
+ int preferredHeight()const{return buttons.size()>8?82:56;}
+ void resized()override{title.setBounds(0,0,160,24);int width=(getWidth()-165)/8;for(size_t i=0;i<buttons.size();i++)buttons[i]->setBounds(165+int(i%8)*width,int(i/8)*30,width,28);}
+};
 class TangPanel:public Component,private Timer {
  Processor& p;TextEditor port;TextButton connect{"CONNECT"},read{"READ TANG"},send{"SEND SESSION"},dry{"CONTROLLER ONLY"};Label status,hint;Viewport view;Component content;
+ std::vector<std::unique_ptr<TangSwitches>> switches;
  std::array<Slider,tang::count> controls;std::array<Label,tang::count> names;
  std::array<std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment>,tang::count> links;
  std::unique_ptr<AudioProcessorValueTreeState::ButtonAttachment> dryLink;
@@ -82,11 +103,12 @@ public:
  hint.setText("USB = control only | Audio: DAW output > PCM1808 > Tang > PCM5102 > audio interface return",dontSendNotification);hint.setColour(Label::textColourId,Colour(0xff91c5d7));
  view.setViewedComponent(&content,false);view.setScrollBarsShown(true,false);
  for(int i=0;i<tang::count;i++){auto& k=controls[i];auto spec=tang::params[i];content.addAndMakeVisible(k);content.addAndMakeVisible(names[i]);names[i].setText(spec.name,dontSendNotification);names[i].setColour(Label::textColourId,Colour(accents[i%8]));k.setSliderStyle(Slider::LinearHorizontal);k.setTextBoxStyle(Slider::TextBoxBelow,false,110,22);links[i]=std::make_unique<AudioProcessorValueTreeState::SliderAttachment>(p.state,tang::id(i),k);k.setTextValueSuffix(spec.maximum==65535?" %":"");}
+ for(int i=34;i<tang::count;i++){controls[i].setVisible(false);names[i].setVisible(false);auto sw=std::make_unique<TangSwitches>(p.state,i);content.addAndMakeVisible(*sw);switches.push_back(std::move(sw));}
  startTimerHz(5);
  }
- void timerCallback()override{status.setText(p.tangLink.status()+(p.tangLink.connected&&!p.tangReady?" | Choose READ TANG or SEND SESSION":""),dontSendNotification);connect.setButtonText(p.tangLink.connected?"DISCONNECT":"CONNECT");status.setColour(Label::textColourId,p.tangLink.connected?Colour(0xff00dfa2):Colour(0xffffba70));read.setEnabled(p.tangLink.connected);send.setEnabled(p.tangLink.connected);for(auto& k:controls)k.setEnabled(!p.tangLink.connected||p.tangReady);}
+ void timerCallback()override{status.setText(p.tangLink.status()+(p.tangLink.connected&&!p.tangReady?" | Choose READ TANG or SEND SESSION":""),dontSendNotification);connect.setButtonText(p.tangLink.connected?"DISCONNECT":"CONNECT");status.setColour(Label::textColourId,p.tangLink.connected?Colour(0xff00dfa2):Colour(0xffffba70));read.setEnabled(p.tangLink.connected);send.setEnabled(p.tangLink.connected);for(auto& k:controls)k.setEnabled(!p.tangLink.connected||p.tangReady);for(auto& sw:switches){sw->refresh();sw->setEnabled(!p.tangLink.connected||p.tangReady);}}
  void paint(Graphics& g)override{g.fillAll(Colour(0xff071018));}
- void resized()override{port.setBounds(0,0,230,30);connect.setBounds(240,0,125,30);read.setBounds(375,0,125,30);send.setBounds(510,0,145,30);dry.setBounds(665,0,190,30);status.setBounds(0,34,getWidth(),25);hint.setBounds(0,61,getWidth(),25);view.setBounds(0,96,getWidth(),getHeight()-96);int w=(getWidth()-20)/4;content.setSize(getWidth()-20,((tang::count+3)/4)*90);for(int i=0;i<tang::count;i++){int x=(i%4)*w,y=(i/4)*90;names[i].setBounds(x+6,y,w-12,23);controls[i].setBounds(x+6,y+23,w-16,62);}}
+ void resized()override{port.setBounds(0,0,230,30);connect.setBounds(240,0,125,30);read.setBounds(375,0,125,30);send.setBounds(510,0,145,30);dry.setBounds(665,0,190,30);status.setBounds(0,34,getWidth(),25);hint.setBounds(0,61,getWidth(),25);view.setBounds(0,96,getWidth(),getHeight()-96);int w=(getWidth()-20)/4;for(int i=0;i<34;i++){int x=(i%4)*w,y=(i/4)*90;names[i].setBounds(x+6,y,w-12,23);controls[i].setBounds(x+6,y+23,w-16,62);}int y=9*90+12;for(auto& sw:switches){sw->setBounds(6,y,getWidth()-32,sw->preferredHeight());y+=sw->preferredHeight();}content.setSize(getWidth()-20,y);}
 };
 class Editor:public AudioProcessorEditor,private Timer {
  Processor& p;NeonLook look;TooltipWindow tips{this,650};
@@ -100,7 +122,7 @@ class Editor:public AudioProcessorEditor,private Timer {
  void cable(Graphics& g,Point<float> a,Point<float>b,Colour colour,float level){Path path;path.startNewSubPath(a);path.cubicTo(a.x+65,a.y,b.x-65,b.y,b.x,b.y);g.setColour(colour.withAlpha(.24f));g.strokePath(path,PathStrokeType(2));if(level>.0001f){g.setColour(colour.withAlpha(.85f));g.strokePath(path,PathStrokeType(1.6f));for(int i=0;i<3;i++){auto dot=path.getPointAlongPath(path.getLength()*std::fmod(phase*.18f+i/3.f,1.f));g.fillEllipse(dot.x-2.5f,dot.y-2.5f,5,5);}}}
  void node(Graphics& g,String name,juce::Rectangle<float> r,Colour col,int meter,int shape=0){g.setColour(Colour(0xff0b1924));g.fillRoundedRectangle(r,7);g.setColour(col.withAlpha(.8f));g.drawRoundedRectangle(r,7,1.3f);text(g,name,r.withHeight(26).reduced(11,0),13,col);Path wave;for(int i=0;i<100;i++){float x=float(i)/99,angle=x*12.f-phase*2,y=std::sin(angle);if(shape==1)y=std::asin(std::sin(angle*2))*.65f;if(shape==2)y=std::sin(angle*2)*std::exp(-std::fmod(x*4,1.f)*3);float xx=r.getX()+12+x*(r.getWidth()-24),yy=r.getY()+43+y*9;if(i==0)wave.startNewSubPath(xx,yy);else wave.lineTo(xx,yy);}g.setColour(col.withAlpha(.8f));g.strokePath(wave,PathStrokeType(1.4f));float level=p.engine.meters[size_t(meter)].load();g.setColour(Colour(0xff21313e));g.fillRect(r.getX()+12,r.getBottom()-10,r.getWidth()-24,3.f);g.setColour(col);g.fillRect(r.getX()+12,r.getBottom()-10,(r.getWidth()-24)*jlimit(0.f,1.f,level*1.6f),3.f);}
 public:
- Editor(Processor& proc):AudioProcessorEditor(proc),p(proc),tangPanel(proc){setLookAndFeel(&look);setSize(1180,760);addAndMakeVisible(tangPage);addChildComponent(tangPanel);tangPage.setClickingTogglesState(true);tangPage.onClick=[this]{bool show=tangPage.getToggleState();tangPanel.setVisible(show);for(auto& k:knobs)k.setVisible(!show);};
+ Editor(Processor& proc):AudioProcessorEditor(proc),p(proc),tangPanel(proc){setLookAndFeel(&look);setSize(1180,760);addAndMakeVisible(tangPage);addChildComponent(tangPanel);tangPage.setClickingTogglesState(true);tangPage.onClick=[this]{bool show=tangPage.getToggleState();tangPanel.setVisible(show);presets.setEnabled(!show);series.setEnabled(!show);bypass.setEnabled(!show);for(auto& k:knobs)k.setVisible(!show);};
   presets.addItemList({"01  Parallel Dreams","02  Celestial Bloom","03  Prism Cascade","04  Midnight Drift","05  Neon Dust"},1);presets.setTextWhenNothingSelected("PRESETS / choose a texture");presets.onChange=[this]{if(presets.getSelectedId()>0)p.preset(presets.getSelectedId()-1);};addAndMakeVisible(presets);
   for(int i=0;i<10;i++){auto& k=knobs[size_t(i)];k.setSliderStyle(i<8?Slider::RotaryHorizontalVerticalDrag:Slider::LinearHorizontal);k.setTextBoxStyle(Slider::TextBoxBelow,false,104,23);k.setColour(Slider::rotarySliderFillColourId,Colour(accents[i%8]));k.setDoubleClickReturnValue(true,p.state.getParameter(ids[i])->convertFrom0to1(p.state.getParameter(ids[i])->getDefaultValue()));
    const char* help[]={"First stereo delay time. Double-click restores the default.","Second stereo delay time. SERIES feeds A into B.","Shared feedback; softened and damped for stable echoes.","Low-pass cutoff on the Wavefolder branch. MOTION modulates it.","Fold amount and drive. 2x oversampling softens aliasing.","Stereo reverb fed by the wet bus.","LFO depth: animates filter cutoff and wet amplitude.","Dry / wet blend. 0% is the original input.","LFO speed in cycles per second.","Master output gain. BYPASS restores unity gain."};k.setTooltip(help[i]);
@@ -117,7 +139,7 @@ public:
  void paint(Graphics& g)override{
   g.fillAll(Colour(0xff071018));g.setColour(Colour(0xff10232e));for(int x=20;x<1170;x+=20)g.drawVerticalLine(x,112,480);for(int y=112;y<480;y+=20)g.drawHorizontalLine(y,20,1160);
   text(g,"C E L E S T E",{24,14,300,42},30,Colour(0xff8beaff));text(g,"PARALLEL FABRIC  /  NATIVE AUDIO",{27,58,450,20},12,Colour(0xff7ea7b9));
-  text(g,"ONE SOURCE / MULTIPLE TEXTURES",{24,94,500,24},15,Colour(0xffc7e6f3));
+  text(g,tangPage.getToggleState()?"TANG / HARDWARE AUTOMATION":"ONE SOURCE / MULTIPLE TEXTURES",{24,94,500,24},15,Colour(0xffc7e6f3));
   const auto s=p.settings();text(g,s.bypass?"BYPASS / DRY SIGNAL":"STEREO DSP  /  2x WAVEFOLDER",{795,94,365,24},13,s.bypass?Colour(0xffffc276):Colour(0xff00dfa2),Justification::centredRight);
   Colour blue(0xff35a8ff),cyan(0xff5bcfff),orange(0xffffa53d),pink(0xfffa66bf),purple(0xffaa71ff),green(0xff00dfa2),neutral(0xffb9d3df);
   auto m=[this](int n){return p.engine.meters[size_t(n)].load();};
