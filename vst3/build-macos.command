@@ -26,7 +26,7 @@ cmake -S . -B "$build" -G "Unix Makefiles" \
   -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 \
   -DJUCE_SOURCE_DIR="$deps/JUCE"
 cmake --build "$build" --config Release --parallel 3 \
-  --target Celeste_VST3 Celeste_AU Celeste_Standalone CelesteCheck
+  --target Celeste_VST3 Celeste_AU Celeste_Standalone CelesteCheck CelesteTangCheck
 "$build/CelesteCheck_artefacts/Release/CelesteCheck" | tee "$out/dsp-tests.txt"
 artifacts="$build/Celeste_artefacts/Release"
 ditto "$artifacts/VST3/CELESTE Parallel.vst3" "$out/CELESTE Parallel.vst3"

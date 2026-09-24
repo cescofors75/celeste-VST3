@@ -1,6 +1,8 @@
 name: CELESTE macOS Universal
 on:
   workflow_dispatch:
+  pull_request:
+    paths: ['vst3/**', '.github/workflows/celeste-macos.yml']
   push:
     branches: [main]
     paths: ['vst3/**', '.github/workflows/celeste-macos.yml']
@@ -83,4 +85,3 @@ jobs:
           done
           cat /tmp/celeste-au-list.txt
           auval -v aufx Cpf1 Clst
-

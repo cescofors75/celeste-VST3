@@ -61,3 +61,15 @@ start=time.perf_counter()
 plugin(np.tile(signal,(1,10)),sr,buffer_size=512)
 elapsed=time.perf_counter()-start
 print(json.dumps({'checks':results,'render_10_seconds_at_96k_seconds':round(elapsed,3)},indent=2))
+
+# The hardware controller must remain sample-exact without a connected Tang.
+put(bypass=False, master_mix=1., output=6., tang_controller_only=True)
+probe=np.random.default_rng(7).uniform(-.3,.3,(2,4096)).astype(np.float32)
+assert np.array_equal(plugin(probe,48000,buffer_size=257),probe), 'Controller-only modifies DAW audio'
+put(tang_delay_time=37.5, tang_global_bypass=1.)
+hardware_state=plugin.raw_state
+put(tang_delay_time=0., tang_global_bypass=0.)
+plugin.raw_state=hardware_state
+assert abs(float(plugin.tang_delay_time)-37.5)<.002 and float(plugin.tang_global_bypass)==1.
+assert np.array_equal(plugin(probe,48000,buffer_size=64),probe)
+print('PASS Tang controller-only audio identity and hardware parameter session recall')
