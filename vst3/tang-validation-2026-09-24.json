@@ -1,0 +1,21 @@
+{
+  "commit": "6d2f4ed6e946fffef6ec776c5f2e12d61a63c7d1",
+  "pull_request": "https://github.com/cescofors75/celeste-VST3/pull/1",
+  "windows_cpp_objects": "PASS",
+  "local_link": "BLOCKED: Device Guard rejects ar.exe; security policy unchanged",
+  "final_ci": "PASS Windows and macOS Apple Silicon/Intel",
+  "physical_cpp_controller_test": "PASS final revision: 44 parameter read, exclusive port, feedback write/read/restore",
+  "firmware_changed": false,
+  "automatable_hardware_parameters": 44,
+  "serial_audio_return": false,
+  "macos_final_ci": "PASS: Universal build, DSP, host tests and AU validation on Apple Silicon and Intel",
+  "macos_run": "https://github.com/cescofors75/celeste-VST3/actions/runs/36051641756",
+  "historical_line_in_losses": 640938,
+  "line_in_loss_delta_during_5s_followup": 0,
+  "windows_run": "https://github.com/cescofors75/celeste-VST3/actions/runs/36051641681",
+  "windows_final_local_host": "PASS DSP 44.1/48/96kHz, controller identity, hardware parameter recall",
+  "historical_line_in_losses_at_final_test": 640977,
+  "analog_audio_capture": false,
+  "web_reconnected": true,
+  "gui_in_commercial_daw": "not tested"
+}

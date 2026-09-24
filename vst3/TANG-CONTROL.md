@@ -1,4 +1,4 @@
-# Tang Control — primera integración (fuentes, pendiente de binario validado)
+# Tang Control — primera integracion validada
 
 El efecto nativo se conserva. TANG CONTROL añade 44 parámetros de hardware independientes, automatizables y guardados en la sesión del DAW. No transforma la Tang en una interfaz de audio USB.
 
@@ -33,6 +33,12 @@ Las ultimas filas de la interfaz presentan interruptores por componente y un sel
 
 Puerto exclusivo a 3 Mbaud, protocolo CELESTE/1 con CRC16/CCITT, secuencia y tipo de respuesta comprobados, límites de tamaño/tiempo, cola de últimos valores por parámetro. Hilo serie independiente: processBlock no toca el puerto ni espera respuestas. Al perder conexión no reconecta ni reenvía un patch automáticamente. Sólo acepta la versión Line-In ampliada verificada (capabilities 59391). No cambia firmware, clocks ni cableado.
 
-Windows: compilación de objetos C++ verificada; Device Guard bloquea ar.exe en el enlazado. No hay aún VST3 nuevo validado ni prueba física de este controlador. macOS: implementación termios/IOSSIOSPEED incluida, pendiente de compilación y prueba.
+Validacion final: Windows compilado en GitHub Actions y probado tambien en este ordenador con Pedalboard. Mac Universal compilado y validado VST3/AU en Apple Silicon e Intel. El controlador C++ final reconoce la Tang real, lee 44 controles, verifica exclusividad y prueba escritura/lectura/restauracion del feedback. Puerto macOS fisico, interfaz grafica en un DAW comercial y retorno analogico no probados. Device Guard impidio el enlazado local; no se cambio la politica de seguridad.
 
-Después de compilar: host_test.py prueba identidad del audio en Controller Only y guardado de parámetros, además de regresión DSP existente. CelesteTangCheck COM14 comprueba identificación, lectura de los 44 controles, exclusividad, cambio de un LSB de feedback y restauración con lectura real. Requiere cerrar la web. No se afirma que esas pruebas hayan pasado antes de ejecutarlas.
+Pruebas ejecutadas: host_test.py prueba identidad del audio en Controller Only y guardado de parámetros, además de regresión DSP existente. CelesteTangCheck COM14 comprueba identificación, lectura de los 44 controles, exclusividad, cambio de un LSB de feedback y restauración con lectura real. Requiere cerrar la web. Ambas pruebas han pasado con el binario final. El ADC conserva perdidas historicas de Line-In; esta validacion no certifica continuidad ni calidad analogica.
+
+## Instalar
+
+Windows: copiar la carpeta completa CELESTE Parallel.vst3 a C:\Program Files\Common Files\VST3 y reescanear en el DAW. Mac: VST3 a ~/Library/Audio/Plug-Ins/VST3/; AU a ~/Library/Audio/Plug-Ins/Components/. Los binarios Mac tienen firma ad hoc de desarrollo, sin notarizacion.
+
+Revision de codigo: 6d2f4ed6e946fffef6ec776c5f2e12d61a63c7d1. PR: https://github.com/cescofors75/celeste-VST3/pull/1
