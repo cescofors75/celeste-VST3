@@ -1,6 +1,6 @@
 # CELESTE Parallel — Native VST3 0.1
 
-Efecto estéreo para Windows x64, independiente de la Tang Nano, USB y navegador.
+Efecto estéreo nativo para Windows x64 y macOS Universal, con Tang Control opcional. El DSP nativo funciona sin placa. Revisión: 24 de septiembre de 2026.
 
 ## Instalar y probar
 
@@ -9,7 +9,7 @@ Efecto estéreo para Windows x64, independiente de la Tang Nano, USB y navegador
 3. Reproduce la pista y selecciona **Celestial Bloom** para ambient, **Prism Cascade** para ecos rítmicos o **Neon Dust** para una textura más agresiva.
 4. Compara con **BYPASS**. **MASTER MIX** controla la mezcla original/procesada. Empieza con un volumen de escucha moderado.
 
-No es un sintetizador: necesita audio de entrada. No necesita la FPGA. La aplicación Standalone incluida permite probarlo con un dispositivo de entrada/salida; para una pista de audio, el DAW es la opción más sencilla.
+No es un sintetizador: necesita audio de entrada. No necesita la FPGA. El paquete macOS incluye también Standalone. El ZIP Windows Tang Control publicado contiene el VST3; para una pista de audio, úsalo dentro del DAW.
 
 ## Controles
 
@@ -36,7 +36,7 @@ El procesamiento se ejecuta en la CPU del ordenador. La topología paralela es r
 
 ## Alcance de esta primera versión
 
-Cinco presets y una topología fija con conmutación paralelo/serie. No incluye todavía editor libre de cables, duplicación arbitraria de módulos, Glitch, Chaos, sincronía BPM, entrada mono ni control de hardware. VST3 de 64 bits para Windows; no sirve como binario para macOS. No equivale a una certificación de compatibilidad con todos los DAW.
+Cinco presets y una topología fija con conmutación paralelo/serie. No incluye todavía editor libre de cables, duplicación arbitraria de módulos, Glitch, Chaos, sincronía BPM, entrada mono en el motor nativo. La página Tang Control añade control de hardware separado: consulta [la guía](TANG-CONTROL.md). Hay paquetes distintos para Windows VST3 y macOS Universal VST3/AU; el binario Windows no funciona en Mac. No equivale a una certificación de compatibilidad con todos los DAW.
 
 ## Compilar el código
 
@@ -44,7 +44,7 @@ Requiere CMake 3.22+, C++17 y JUCE **7.0.12**. Se ha compilado con MinGW-w64; ta
 
 ```powershell
 git clone --depth 1 --branch 7.0.12 https://github.com/juce-framework/JUCE.git JUCE
-cmake -S source -B build -DJUCE_SOURCE_DIR="$PWD/JUCE"
+cmake -S vst3 -B build -DJUCE_SOURCE_DIR="$PWD/JUCE"
 cmake --build build --config Release
 ```
 
@@ -54,6 +54,6 @@ cmake --build build --config Release
 
 JUCE 7.0.12 y su SDK VST3 integrado. Se adjuntan los avisos de JUCE y Steinberg. Este paquete se entrega como prototipo local con código fuente; antes de distribuirlo públicamente, aplica la modalidad de licencia correspondiente de JUCE. La licencia del resto del proyecto CELESTE no se modifica.
 
-## Integracion Tang en desarrollo
+## Tang Control — septiembre 2026
 
-La pagina TANG CONTROL y su estado de validacion se describen en [TANG-CONTROL.md](TANG-CONTROL.md). Los binarios antiguos no incluyen esta funcion.
+La pagina TANG CONTROL y su estado de validacion se describen en [TANG-CONTROL.md](TANG-CONTROL.md). Los paquetes Tang Control actuales incluyen esta función; los binarios originales v0.1 no. Las pruebas y límites concretos figuran en esa guía.
