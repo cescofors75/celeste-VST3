@@ -1,0 +1,37 @@
+name: CELESTE Windows VST3
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ['vst3/**', '.github/workflows/celeste-windows.yml']
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch JUCE
+        run: git clone --depth 1 --branch 7.0.12 https://github.com/juce-framework/JUCE.git build/JUCE7
+      - name: Configure
+        run: cmake -S vst3 -B build/windows -DJUCE_SOURCE_DIR="$env:GITHUB_WORKSPACE/build/JUCE7"
+      - name: Build
+        run: cmake --build build/windows --config Release --target Celeste_VST3 CelesteCheck CelesteTangCheck --parallel 3
+      - name: DSP checks
+        run: '& "build/windows/CelesteCheck_artefacts/Release/CelesteCheck.exe"'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Host and controller audio checks
+        run: |
+          python -m pip install numpy==2.2.6 pedalboard==0.9.25
+          python vst3/host_test.py "build/windows/Celeste_artefacts/Release/VST3/CELESTE Parallel.vst3"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CELESTE-Tang-Control-Windows
+          path: |
+            build/windows/Celeste_artefacts/Release/VST3/
+            build/windows/CelesteTangCheck_artefacts/Release/CelesteTangCheck.exe
+            vst3/TANG-CONTROL.md
+          if-no-files-found: error
+
