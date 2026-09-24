@@ -32,3 +32,8 @@ target_link_libraries(CelesteCheck PRIVATE juce::juce_dsp juce::juce_audio_forma
 juce_add_console_app(CelestePreview PRODUCT_NAME "Celeste preview")
 target_sources(CelestePreview PRIVATE Preview.cpp)
 target_link_libraries(CelestePreview PRIVATE Celeste juce::juce_audio_utils)
+
+juce_add_console_app(CelesteTangCheck PRODUCT_NAME "Celeste Tang checks")
+target_sources(CelesteTangCheck PRIVATE TangCheck.cpp)
+target_link_libraries(CelesteTangCheck PRIVATE juce::juce_audio_utils)
+target_compile_definitions(CelesteTangCheck PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)

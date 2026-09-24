@@ -53,3 +53,7 @@ cmake --build build --config Release
 ## Dependencias
 
 JUCE 7.0.12 y su SDK VST3 integrado. Se adjuntan los avisos de JUCE y Steinberg. Este paquete se entrega como prototipo local con código fuente; antes de distribuirlo públicamente, aplica la modalidad de licencia correspondiente de JUCE. La licencia del resto del proyecto CELESTE no se modifica.
+
+## Integracion Tang en desarrollo
+
+La pagina TANG CONTROL y su estado de validacion se describen en [TANG-CONTROL.md](TANG-CONTROL.md). Los binarios antiguos no incluyen esta funcion.
