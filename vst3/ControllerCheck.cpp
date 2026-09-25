@@ -25,7 +25,7 @@ struct FakePort {
   if(kind==3&&hold){entered=true;auto end=juce::Time::getMillisecondCounterHiRes()+2500;while(hold&&juce::Time::getMillisecondCounterHiRes()<end)juce::Thread::sleep(2);}
   response={67,69,1,uint8_t(kind|128),packet[4],packet[5],packet[6],packet[7],uint8_t(payload.size()),0};response.insert(response.end(),payload.begin(),payload.end());auto c=tang::crc(response.data()+2,response.size()-2);response.push_back(uint8_t(c));response.push_back(uint8_t(c>>8));if(corrupt)response.back()^=1;
  }
- int read(uint8_t* bytes,int capacity){int n=std::min({capacity,int(response.size()),7});std::copy_n(response.begin(),n,bytes);response.erase(response.begin(),response.begin()+n);return n;}
+ int read(uint8_t* bytes,int capacity){int n=(std::min)({capacity,int(response.size()),7});std::copy_n(response.begin(),n,bytes);response.erase(response.begin(),response.begin()+n);return n;}
 };
 using TestLink=tang::BasicLink<FakePort>;
 static void connect(TestLink& link){link.connect("FAKE");until([&]{return link.connected.load();});std::map<int,int> values;require(link.take(values)&&values.size()==55,"initial snapshot incomplete");}
