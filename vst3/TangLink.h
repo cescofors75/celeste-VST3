@@ -109,7 +109,7 @@ public:
 template<class SerialPort=Port> class BasicLink:private juce::Thread {
  SerialPort port;uint32_t sequence=0;juce::CriticalSection lock;
  juce::String path,message="Disconnected";bool desired=false,readPending=false,follow=false;int action=0;
- uint64_t generation=0;std::map<int,int> writes,received;bool snapshot=false;
+ uint64_t generation=0,connectionEpoch=0;std::map<int,int> writes,received;bool snapshot=false;
  struct Cancelled {};
  bool valid(uint64_t ticket){const juce::ScopedLock g(lock);return desired&&ticket==generation&&!threadShouldExit();}
  std::vector<uint8_t> request(int kind,const std::vector<uint8_t>& payload={}){
@@ -128,12 +128,13 @@ template<class SerialPort=Port> class BasicLink:private juce::Thread {
   inputPeak=float(word(a,80))/32768.f;outputPeak=float(e[70])/255.f;return values;
  }
  void publish(uint64_t ticket,const std::map<int,int>& values,bool verified=false){const juce::ScopedLock g(lock);if(ticket!=generation||!desired)throw Cancelled{};received=values;snapshot=true;if(verified)verifiedBatches++;}
- void run()override{bool active=false;double lastPoll=0;while(!threadShouldExit()){
- bool want,read,poll;int command;uint64_t ticket;juce::String selected;std::map<int,int> pending;
- {const juce::ScopedLock g(lock);want=desired;ticket=generation;command=action;action=0;selected=path;read=readPending;readPending=false;poll=follow;pending.swap(writes);}
+ void run()override{bool active=false;uint64_t openedEpoch=0;double lastPoll=0;while(!threadShouldExit()){
+ bool want,read,poll;int command;uint64_t ticket,epoch;juce::String selected;std::map<int,int> pending;
+ {const juce::ScopedLock g(lock);want=desired;ticket=generation;epoch=connectionEpoch;command=action;action=0;selected=path;read=readPending;readPending=false;poll=follow;pending.swap(writes);}
  try{
- if(!want){port.close();active=false;connected=false;busy=false;{const juce::ScopedLock g(lock);if(!desired)message="Disconnected";}wait(50);continue;}
- if(!active){port.open(selected);sequence=0;auto ping=checked(ticket,1);if(std::string(ping.begin(),ping.end())!="CELESTE/1")throw std::runtime_error("Not a CELESTE device");auto st=checked(ticket,2);if(dword(st,0)!=48000||word(st,28)!=59391)throw std::runtime_error("Requires expanded Line-In firmware (59391)");active=true;publish(ticket,readControls(ticket));connected=true;pending.clear();read=false;}
+ if(!want){port.close();active=false;connected=false;busy=false;{const juce::ScopedLock g(lock);if(!desired&&message.startsWith("Disconnected"))message="Disconnected";}wait(50);continue;}
+ if(active&&openedEpoch!=epoch){port.close();active=false;connected=false;}
+ if(!active){port.open(selected);openedEpoch=epoch;sequence=0;auto ping=checked(ticket,1);if(std::string(ping.begin(),ping.end())!="CELESTE/1")throw std::runtime_error("Not a CELESTE device");auto st=checked(ticket,2);if(dword(st,0)!=48000||word(st,28)!=59391)throw std::runtime_error("Requires expanded Line-In firmware (59391)");active=true;publish(ticket,readControls(ticket));connected=true;pending.clear();read=false;}
  if(command)checked(ticket,command);
  if(!pending.empty()){
   busy=true;{const juce::ScopedLock g(lock);message="Applying hardware controls...";}
@@ -153,10 +154,10 @@ template<class SerialPort=Port> class BasicLink:private juce::Thread {
 public:
  std::atomic<bool> connected{false},busy{false};std::atomic<int> verifiedBatches{0};std::atomic<float> inputPeak{0},outputPeak{0};
  BasicLink():Thread("CELESTE Tang USB"){startThread();}~BasicLink()override{signalThreadShouldExit();notify();stopThread(4000);}
- void connect(juce::String p){const juce::ScopedLock g(lock);if(desired||connected)return;path=p.trim();++generation;desired=true;snapshot=false;message="Connecting...";notify();}
- void disconnect(){const juce::ScopedLock g(lock);desired=false;++generation;action=0;writes.clear();snapshot=false;connected=false;message="Disconnected (finishing in-flight reply)";notify();}
+ void connect(juce::String p){const juce::ScopedLock g(lock);if(desired||connected)return;path=p.trim();++connectionEpoch;++generation;desired=true;snapshot=false;message="Connecting...";notify();}
+ void disconnect(){const juce::ScopedLock g(lock);desired=false;++connectionEpoch;++generation;action=0;writes.clear();snapshot=false;connected=false;message="Disconnected (finishing in-flight reply)";notify();}
  void lineIn(bool play){const juce::ScopedLock g(lock);if(connected)action=play?5:6;notify();}
- void readState(){const juce::ScopedLock g(lock);++generation;readPending=true;writes.clear();snapshot=false;notify();}
+ void readState(){const juce::ScopedLock g(lock);++generation;action=0;readPending=true;writes.clear();snapshot=false;notify();}
  void followHardware(bool enabled){const juce::ScopedLock g(lock);follow=enabled;}
  void set(int id,int value){const juce::ScopedLock g(lock);if(connected&&desired)writes[id]=value;}
  void apply(const std::map<int,int>& values){const juce::ScopedLock g(lock);if(!connected||!desired)return;++generation;writes=values;readPending=false;snapshot=false;busy=true;notify();}

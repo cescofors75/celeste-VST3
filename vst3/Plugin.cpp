@@ -48,7 +48,7 @@ public:
    if(!division)continue;
    const int raw=tang::tempoRaw(delay,division,hostBpm.load());
    if(raw<0){tempoOutOfRange=true;continue;}
-   auto* value=state.getParameter(delay?"tang_24":"tang_2");value->setValueNotifyingHost(value->convertTo0to1(raw*100.f/65535.f));
+   auto* value=state.getParameter(delay?"tang_24":"tang_2");const float normalized=value->convertTo0to1(raw*100.f/65535.f);if(std::abs(value->getValue()-normalized)>1e-6f)value->setValueNotifyingHost(normalized);
   }
   for(int i=0;i<tang::count;i++){int raw=desiredValue(i);if(raw!=lastTang[i]){tangLink.set(tang::params[i].wire,raw);lastTang[i]=raw;}}
  }
@@ -69,7 +69,7 @@ public:
    else if(spec.wire==23)l.add(std::make_unique<AudioParameterChoice>(ParameterID(tang::id(i),3),"Tang Glitch mode",StringArray{"Texture","Stutter"},0));
    else if(spec.wire==28)l.add(std::make_unique<AudioParameterChoice>(ParameterID(tang::id(i),3),"Tang Filter mode",StringArray{"LPF","HPF","BPF","Notch"},0));
    else if(spec.wire==29)l.add(std::make_unique<AudioParameterChoice>(ParameterID(tang::id(i),3),"Tang Glitch size",StringArray{"5.3 ms","10.7 ms","21.3 ms","42.7 ms"},0));
-   else l.add(std::make_unique<AudioParameterFloat>(ParameterID(tang::id(i),2),"Tang "+String(spec.name),NormalisableRange<float>(0.f,spec.maximum==65535?100.f:float(spec.maximum),spec.maximum==65535?.001f:1.f),0.f));
+   else l.add(std::make_unique<AudioParameterFloat>(ParameterID(tang::id(i),i<44?2:3),"Tang "+String(spec.name),NormalisableRange<float>(0.f,spec.maximum==65535?100.f:float(spec.maximum),spec.maximum==65535?.001f:1.f),0.f));
    if(tang::isMask(spec.wire)){auto names=tang::bitNames(spec.wire);for(int bit=0;bit<names.size();bit++)l.add(std::make_unique<AudioParameterBool>(ParameterID(tang::bitId(spec.wire,bit),3),"Tang "+String(spec.name)+" "+names[bit],false));}
   }
   l.add(std::make_unique<AudioParameterChoice>(ParameterID("tangRouting",3),"Tang Delay 2 topology",StringArray{"Off","Parallel","Series A to B"},0));

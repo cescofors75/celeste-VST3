@@ -9,11 +9,11 @@ static void until(const std::function<bool()>& condition){auto end=juce::Time::g
 struct FakePort {
  inline static std::mutex mutex;
  inline static std::map<int,int> registers;
- inline static std::atomic<int> writeCount{0};
+ inline static std::atomic<int> writeCount{0},openCount{0};
  inline static std::atomic<bool> hold{false},entered{false},corrupt{false},rejectValue{false};
  std::vector<uint8_t> response;
- static void reset(){std::lock_guard<std::mutex> guard(mutex);registers.clear();writeCount=0;hold=false;entered=false;corrupt=false;rejectValue=false;}
- void open(const juce::String&){} void close(){}
+ static void reset(){std::lock_guard<std::mutex> guard(mutex);registers.clear();writeCount=0;openCount=0;hold=false;entered=false;corrupt=false;rejectValue=false;}
+ void open(const juce::String&){openCount++;} void close(){}
  void write(const std::vector<uint8_t>& packet){
   const int kind=packet[3];std::vector<uint8_t> payload;
   {std::lock_guard<std::mutex> guard(mutex);
@@ -29,7 +29,7 @@ struct FakePort {
 };
 using TestLink=tang::BasicLink<FakePort>;
 static void connect(TestLink& link){link.connect("FAKE");until([&]{return link.connected.load();});std::map<int,int> values;require(link.take(values)&&values.size()==55,"initial snapshot incomplete");}
-int main(){juce::ScopedJuceInitialiser_GUI init;
+int main(int argc,char** argv){juce::ScopedJuceInitialiser_GUI init;
  try{
   require(tang::tempoRaw(0,3,120)==47992&&tang::tempoRaw(1,3,120)==-1&&tang::tempoRaw(1,2,120)==47984&&tang::tempoRaw(0,1,0)==-1,"tempo range/quantization");
   std::cout<<"PASS tempo divisions honor both physical RAM capacities\n";
@@ -43,14 +43,18 @@ int main(){juce::ScopedJuceInitialiser_GUI init;
   std::cout<<"PASS disconnect cancels remaining in-flight batch\n";
   FakePort::reset();{TestLink link;connect(link);FakePort::hold=true;link.apply({{0,1},{1,2},{2,3}});until([]{return FakePort::entered.load();});link.readState();FakePort::hold=false;std::map<int,int> result;until([&]{return link.take(result);});require(FakePort::writeCount==1&&result.at(0)==1&&result.at(1)==0,"read did not cancel stale batch");}
   std::cout<<"PASS READ cancels writes and reads actual partial state\n";
-  FakePort::reset();{TestLink link;connect(link);FakePort::rejectValue=true;link.apply({{3,2345}});until([&]{return !link.connected.load();});require(link.verifiedBatches==0&&link.status().contains("readback mismatch"),"false successful apply");}
+  FakePort::reset();{TestLink link;connect(link);FakePort::hold=true;link.apply({{0,1},{1,2}});until([]{return FakePort::entered.load();});link.disconnect();link.connect("OTHER");FakePort::hold=false;until([&]{return link.connected.load()&&FakePort::openCount==2;});require(FakePort::writeCount==1,"reconnect replayed stale controls");}
+  std::cout<<"PASS rapid reconnect reopens the port without stale writes\n";
+
+  FakePort::reset();{TestLink link;connect(link);FakePort::rejectValue=true;link.apply({{3,2345}});until([&]{return !link.connected.load()&&link.status().contains("readback mismatch");});require(link.verifiedBatches==0&&link.status().contains("readback mismatch"),"false successful apply");}
   std::cout<<"PASS acknowledged but unapplied value rejected\n";
-  FakePort::reset();{TestLink link;connect(link);FakePort::corrupt=true;link.readState();until([&]{return !link.connected.load();});require(link.status().contains("CRC"),"corrupt response accepted");}
+  FakePort::reset();{TestLink link;connect(link);FakePort::corrupt=true;link.readState();until([&]{return !link.connected.load()&&link.status().contains("CRC");});require(link.status().contains("CRC"),"corrupt response accepted");}
   std::cout<<"PASS corrupt response disconnects without reconnect\n";
   FakePort::reset();{TestLink link;connect(link);link.followHardware(true);{std::lock_guard<std::mutex> guard(FakePort::mutex);FakePort::registers[4]=41000;}std::map<int,int> result;until([&]{return link.take(result)&&result.at(4)==41000;});require(FakePort::writeCount==0,"hardware follow wrote controls");}
   std::cout<<"PASS hardware-follow snapshots do not write\n";
   {Processor p;juce::ValueTree old("CELESTE");for(auto entry:std::initializer_list<std::pair<const char*,float>>{{"tang_88",5},{"tang_27",3},{"tang_2",37.5f}}){juce::ValueTree v("PARAM");v.setProperty("id",entry.first,nullptr);v.setProperty("value",entry.second,nullptr);old.appendChild(v,nullptr);}juce::MemoryBlock bytes;juce::AudioProcessor::copyXmlToBinary(*old.createXml(),bytes);p.setStateInformation(bytes.getData(),int(bytes.getSize()));require(p.state.getRawParameterValue("tang_bit_88_0")->load()==1&&p.state.getRawParameterValue("tang_bit_88_1")->load()==0&&p.state.getRawParameterValue("tang_bit_88_2")->load()==1,"legacy mask migration");require(p.state.getRawParameterValue("tangRouting")->load()==2,"legacy routing migration");require(p.state.getRawParameterValue("tang_2")->load()==37.5f,"legacy continuous state");require(!p.state.getParameter("tang_88")->isAutomatable()&&p.state.getParameter("tang_bit_88_0")->isBoolean(),"mask still rampable");p.state.getParameter("tang_bit_88_1")->setValueNotifyingHost(1);p.getStateInformation(bytes);Processor restored;restored.setStateInformation(bytes.getData(),int(bytes.getSize()));require(restored.state.getRawParameterValue("tang_bit_88_1")->load()==1,"new bit recall");}
   std::cout<<"PASS old session migration, independent booleans and new state recall\n";
+  if(argc>1){Processor p;std::unique_ptr<juce::AudioProcessorEditor> editor(p.createEditor());for(auto* child:editor->getChildren())if(auto* button=dynamic_cast<juce::TextButton*>(child))if(button->getButtonText()=="TANG CONTROL"){button->setToggleState(true,juce::dontSendNotification);button->onClick();}auto screenshot=editor->createComponentSnapshot(editor->getLocalBounds(),true,1.f);auto stream=juce::File(argv[1]).createOutputStream();require(bool(stream),"preview output");stream->setPosition(0);stream->truncate();juce::PNGImageFormat png;require(png.writeImageToStream(screenshot,*stream),"preview render");std::cout<<"PASS hardware editor rendered\n";}
   return 0;
  }catch(const std::exception& ex){FakePort::hold=false;std::cerr<<"FAIL "<<ex.what()<<"\n";return 1;}
 }

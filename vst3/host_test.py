@@ -73,3 +73,18 @@ plugin.raw_state=hardware_state
 assert abs(float(plugin.tang_delay_time)-37.5)<.002 and float(plugin.tang_global_bypass)==1.
 assert np.array_equal(plugin(probe,48000,buffer_size=64),probe)
 print('PASS Tang controller-only audio identity and hardware parameter session recall')
+
+# 0.2 hardware controls must round-trip through an actual VST3 host.
+for name in ('tang_chaos_rate','tang_chorus_rate','tang_flanger_rate','tang_crusher_rate',
+             'tang_tremolo_rate','tang_auto_pan_rate','tang_envelope_release'):
+    assert name in plugin.parameters, f'Missing FPGA parameter: {name}'
+    setattr(plugin,name,37.5)
+new_state=plugin.raw_state
+for name in ('tang_chaos_rate','tang_chorus_rate','tang_flanger_rate','tang_crusher_rate',
+             'tang_tremolo_rate','tang_auto_pan_rate','tang_envelope_release'):
+    setattr(plugin,name,0.)
+plugin.raw_state=new_state
+for name in ('tang_chaos_rate','tang_chorus_rate','tang_flanger_rate','tang_crusher_rate',
+             'tang_tremolo_rate','tang_auto_pan_rate','tang_envelope_release'):
+    assert abs(float(getattr(plugin,name))-37.5)<.002, f'Failed recall: {name}'
+print('PASS newly added hardware rates and envelope recall')
