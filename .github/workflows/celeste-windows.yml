@@ -16,9 +16,11 @@ jobs:
       - name: Configure
         run: cmake -S vst3 -B build/windows -DJUCE_SOURCE_DIR="$env:GITHUB_WORKSPACE/build/JUCE7"
       - name: Build
-        run: cmake --build build/windows --config Release --target Celeste_VST3 CelesteCheck CelesteTangCheck --parallel 3
+        run: cmake --build build/windows --config Release --target Celeste_VST3 CelesteCheck CelesteTangCheck CelesteControllerCheck --parallel 3
       - name: DSP checks
         run: '& "build/windows/CelesteCheck_artefacts/Release/CelesteCheck.exe"'
+      - name: Controller protocol and session regressions
+        run: '& "build/windows/CelesteControllerCheck_artefacts/Release/CelesteControllerCheck.exe"'
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
